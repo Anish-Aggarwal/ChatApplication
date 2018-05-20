@@ -1,0 +1,99 @@
+<html>
+<head>
+	<title>Chat using node.js	</title>
+	<style>
+	#chat{
+		height:500px;
+	}
+	#chatwrap{
+		float:left;
+		border:1px #000 solid;
+	}
+	#contentwrap{
+		display:none;
+	}
+	.error{
+		color : red;
+	}
+	.whisper{
+		color : grey;
+		font-style : italic;
+	}
+	</style>
+</head>
+<body>
+	<div id="usernameWrap">
+		<p>Enter you Username:</p>
+		<p id="errorWrap"></p>
+		<form id="sendusername">
+			<input size="35" id="username"></input>
+			<input type="submit"></input>
+		</form>
+	</div>
+	<div id="contentwrap">
+		<div id="chatwrap">
+			<div id="chat"></div>
+			<form id="sendMessage">
+				<input size="35" id="message"></input>
+				<input type="submit"></input>
+			</form>
+		</div>
+		<div id="users"></div>
+	</div>
+<script src="http://code.jquery.com/jquery-latest.min.js"></script>
+<script src="/socket.io/socket.io.js"></script>
+
+<script>
+	jQuery(function($){
+		var socket = io.connect();
+		var $chatbox = $('#chat'),
+		$messagebox = $('#message'),
+		$messageSendForm = $('#sendMessage'),
+		$usernameWrap = $('#usernameWrap'),
+		$usernameForm = $('#sendusername'),
+		$username = $('#username'),
+		$errorWrap = $('#errorWrap'),
+		$contentwrap = $('#contentwrap');
+		
+	
+		$messageSendForm.submit(function(e){
+		e.preventDefault();
+		socket.emit('send message',$messagebox.val(),function(data){
+		$chatbox.append('<span class="error"><b>'+data+'</b></span><br/>');
+		});
+		$messagebox.val('');
+		});
+		
+		socket.on('whisper',function(data){
+			$chatbox.append('<span class="whisper"><b>'+data.nick+'</b>'+' : '+data.msg+"</span><br/>");
+		});
+		
+		$usernameForm.submit(function(e){
+		e.preventDefault();
+		socket.emit('new user',$username.val(), function(data){
+		if(data){
+			$usernameWrap.hide();
+			$contentwrap.show();
+		}else{
+			$errorWrap.html('username is already taken, pls try another!')
+		}
+		});
+		$username.val('');
+		});
+	
+		socket.on('new message',function(data){
+		$chatbox.append('<b>'+data.nick+'</b>'+' : '+data.msg+"<br/>");
+		});
+		
+		socket.on('usernames',function(data){
+		var html='';
+			for(var i = 0; i < data.length;i++){
+				html += data[i]+'<br/>';
+			}
+			$('#users').html(html);
+		});
+	});
+</script>
+
+</body>
+</html>
